@@ -90,7 +90,7 @@ void calcLB(GTNode* n)
 }
 
 
-void setPath(GTNode* current_node, map<int, int> &m, int &pos)
+void setPath(GTNode* current_node, map<int, int> &m)
 {
 	cout << "New Path" << endl;
 	//current_node->visited = current_node->parent_ptr->visited;
@@ -105,7 +105,7 @@ void setPath(GTNode* current_node, map<int, int> &m, int &pos)
 	
 	// add new city to path
 	first_unvisited_node->second = true;
-	current_node->visited[first_unvisited_node->first] = current_node->level;
+	current_node->visited[first_unvisited_node->first] = current_node->level; // pos
 	for (auto it = current_node->visited.begin(); it != current_node->visited.end(); ++it)
 		cout << "current_node first: " << it->first << "  second: " << it->second << endl;
 }
@@ -131,8 +131,8 @@ void preOrderHelp(GTNode* current_node)
 	{
 		// visit this node here
 		cout << current_node->lb << endl;
-		preOrderTraversal(current_node->child_ptr);
-		preOrderTraversal(current_node->sibling_ptr);
+		preOrderHelp(current_node->child_ptr);
+		preOrderHelp(current_node->sibling_ptr);
 	}
 }
 	
@@ -161,54 +161,54 @@ GTNode* preOrderTraversal(GTNode* current_node)
 }
 
 
-void createSiblings(GTNode* child, GTNode* parent, map<int, int> &m, int num, int &pos)
+void createSiblings(GTNode* child, GTNode* parent, map<int, int> &m, int num)
 {
 	if (num - 1 != 0)
 	{
 		child->sibling_ptr = new GTNode();
 		child->sibling_ptr->parent_ptr = parent;
 		child->sibling_ptr->visited = parent->visited;
+		child->sibling_ptr->level = parent->level + 1;
 
-		setPath(child->sibling_ptr, m, pos);
+		setPath(child->sibling_ptr, m);
 		calcLB(child->sibling_ptr);
 		--num;
 
-		createSiblings(child->sibling_ptr, parent, m, num, pos);
+		createSiblings(child->sibling_ptr, parent, m, num);
 	}
-
-	++pos;
 }
 
 
-void createChildren(GTNode* parent, int num, int &pos)
+void createChildren(GTNode* parent, int num)
 {
 	GTNode* child = new GTNode();
 	parent->child_ptr = child;
 	child->parent_ptr = parent;
 	child->visited = child->parent_ptr->visited;
+	child->level = parent->level + 1;
 	auto ancillary_map = parent->visited;
 
-	setPath(child, ancillary_map, pos);
+	setPath(child, ancillary_map);
 	calcLB(child);
-	createSiblings(child, parent, ancillary_map, num, pos);
+	createSiblings(child, parent, ancillary_map, num);
 }
 
 
-void initFindPath(GTNode* root, int &pos)
+inline void initFindPath(GTNode* root)
 {
-	createChildren(root, m_size - 1 - root->level, pos);
+	createChildren(root, (m_size - 1 - root->level));
 }
 
 
 void findPath()
 {
 	GTNode* root = new GTNode();
-	int pos = 1;
 
 	root->visited[0] = 0;
 
-	initFindPath(root, pos);
-	createChildren(preOrderTraversal(root), m_size - 1 - (preOrderTraversal(root)->level), pos);
+	initFindPath(root);
+	preOrderHelp(root);
+	createChildren(preOrderTraversal(root), m_size - 1 - (preOrderTraversal(root)->level));
 }
 
 
