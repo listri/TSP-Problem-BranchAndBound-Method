@@ -208,7 +208,7 @@ void findPath()
 
 	initFindPath(root);
 	preOrderHelp(root);
-	createChildren(preOrderTraversal(root), m_size - 1 - (preOrderTraversal(root)->level));
+	createChildren(preOrderTraversal(root->child_ptr), m_size - 1 - (preOrderTraversal(root->child_ptr)->level));
 }
 
 
