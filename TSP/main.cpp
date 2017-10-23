@@ -40,6 +40,7 @@ class GTNode
 public:
 
 	int lb = 0;
+	int level = 0;
 	// first int - which city, second int - on which position
 	map<int, int> visited; // sprawdziæ czy da sie zainicjowac
 	GTNode* parent_ptr  = nullptr;
@@ -104,13 +105,27 @@ void setPath(GTNode* current_node, map<int, int> &m, int &pos)
 	
 	// add new city to path
 	first_unvisited_node->second = true;
-	current_node->visited[first_unvisited_node->first] = pos;
+	current_node->visited[first_unvisited_node->first] = current_node->level;
 	for (auto it = current_node->visited.begin(); it != current_node->visited.end(); ++it)
 		cout << "current_node first: " << it->first << "  second: " << it->second << endl;
 }
-	
 
-void preOrderTraversal(GTNode* current_node)
+
+GTNode* findTheLowestLB(GTNode* node, int min_lb)
+{
+	// sprawdzic pisowanie adjustment
+	GTNode* best_adjustment = new GTNode();
+
+	if (node->lb < min_lb)
+	{
+		best_adjustment = node;
+	}
+
+	return best_adjustment;
+}
+
+
+void preOrderHelp(GTNode* current_node)
 {
 	if (current_node != nullptr)
 	{
@@ -120,9 +135,33 @@ void preOrderTraversal(GTNode* current_node)
 		preOrderTraversal(current_node->sibling_ptr);
 	}
 }
+	
+
+GTNode* preOrderTraversal(GTNode* current_node)
+{
+	int min_lb = INT_MAX;
+	GTNode* best_adjustment = new GTNode();
+
+	if (current_node != nullptr)
+	{
+		// visit this node here
+		cout << current_node->lb << endl;
+
+		if (current_node->lb < min_lb)
+		{
+			best_adjustment = current_node;
+		}
+
+		preOrderTraversal(current_node->child_ptr);
+		preOrderTraversal(current_node->sibling_ptr);
+	}
+
+	min_lb = INT_MAX;
+	return best_adjustment;
+}
 
 
-void createSiblings(GTNode* child, GTNode* parent, map<int, int> &m, int& num, int &pos)
+void createSiblings(GTNode* child, GTNode* parent, map<int, int> &m, int num, int &pos)
 {
 	if (num - 1 != 0)
 	{
@@ -157,18 +196,19 @@ void createChildren(GTNode* parent, int num, int &pos)
 
 void initFindPath(GTNode* root, int &pos)
 {
-	createChildren(root, m_size - 1, pos);
+	createChildren(root, m_size - 1 - root->level, pos);
 }
 
 
 void findPath()
 {
-	int pos = 1;
 	GTNode* root = new GTNode();
+	int pos = 1;
+
 	root->visited[0] = 0;
 
 	initFindPath(root, pos);
-	preOrderTraversal(root);
+	createChildren(preOrderTraversal(root), m_size - 1 - (preOrderTraversal(root)->level), pos);
 }
 
 
