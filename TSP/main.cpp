@@ -14,7 +14,9 @@ const int m_size{ 5 };
 vector<bool> unvisited; // sprawdzic czy da sie zainicjowac
 vector<int> memo;
 map<int, bool> visited_map;
-int UP;
+int UB = INT_MAX;
+int min_lb = INT_MAX;
+
 
 int matrix[][5] = {
 	{  -1,10,8,9,7  },
@@ -42,9 +44,11 @@ class GTNode
 {
 public:
 
-	int lb = 0;
+	int lb = -1;
 	int actual_cost = 0;
 	int level = 0;
+	bool was_visitied = false;
+	bool leaf = false;
 	// first int - which city, second int - on which position
 	map<int, int> visited; // sprawdziæ czy da sie zainicjowac
 	GTNode* parent_ptr  = nullptr;
@@ -106,27 +110,25 @@ void calcLB(GTNode* n)
 			return pair.second == m_size - 3;
 		});
 
-		cout << "penu: " << penultimate_visited_node->first << "   " << penultimate_visited_node->second << endl;
-		cout << "last: " << last_visited_node->first << "   " << last_visited_node->second << endl;
-		cout << "last_1: " << last_visited_node_1->first << "   " << last_visited_node_1->second << endl;
-
-
 		n->lb += matrix[last_visited_node_1->first][penultimate_visited_node->first];
 		n->lb += matrix[last_visited_node->first][0];
+
+		n->leaf = true;
+
+		if (n->lb < UB)
+			UB = n->lb;
 	}
 }
 
 
 void setPath(GTNode* current_node, map<int, int> &m)
 {
-	cout << "New Path" << endl;
 	//current_node->visited = current_node->parent_ptr->visited;
 
 	auto first_unvisited_node = std::find_if(std::begin(m), std::end(m),
 		[&](const pair<int, int> &pair)
 		{
 			// you should consider only last result of this cout 
-			cout << "ancillary_map: " <<pair.first << " " << pair.second << endl;
 			if (end_counter == 1)
 				return pair.second == -3;
 			else
@@ -148,7 +150,6 @@ void setPath(GTNode* current_node, map<int, int> &m)
 			[&](const pair<int, int> &pair)
 			{
 				// you should consider only last result of this cout 
-				cout << "ancillary_map in lasts nodes: " << pair.first << " " << pair.second << endl;
 				if (end_counter != 0) {
 					//end_counter = 0;
 					return pair.second == -2;
@@ -161,13 +162,7 @@ void setPath(GTNode* current_node, map<int, int> &m)
 		last_unvisited_node->second = -3;
 		current_node->visited[last_unvisited_node->first] = current_node->level + 1;
 		end_counter++;
-		cout << m.max_size() << endl;
 	}
-	 
-
-
-	for (auto it = current_node->visited.begin(); it != current_node->visited.end(); ++it)
-		cout << "current_node first: " << it->first << "  second: " << it->second << endl;
 }
 
 
@@ -191,33 +186,67 @@ void preOrderHelp(GTNode* current_node)
 	if (current_node != nullptr)
 	{
 		// visit this node here
-		cout << current_node->lb << endl;
+		cout << current_node->lb << " visited: " << current_node->was_visitied << endl;
 		preOrderHelp(current_node->child_ptr);
 		preOrderHelp(current_node->sibling_ptr);
-		cout << "new level" << endl;
 	}
 }
+
+bool checkSiblings(GTNode* node)
+{
+	if (node->child_ptr == nullptr && !node->child_ptr->leaf)
+	{
+		return false;
+	}
+
+	return true;
+}
 	
+bool wasVisited(GTNode* node)
+{
+	GTNode* temp = new GTNode();
+	if (node->child_ptr == nullptr)
+		return false;
+	else
+		temp = node->child_ptr;
+
+	if (temp->leaf == true)
+	{
+		node->was_visitied = true;
+		return true;
+	}
+
+	while (temp->sibling_ptr != nullptr)
+	{
+		temp = temp->sibling_ptr;
+
+		if (temp->child_ptr == nullptr)
+			return false;
+	}
+	
+	node->was_visitied = true;
+	return true;
+}
 
 void preOrderTraversal(GTNode* current_node)
 {
-	int min_lb = INT_MAX;
-
+	cout << "min_lb: " << min_lb << endl;
 	if (current_node != nullptr)
 	{
 		// visit this node here
-		cout << current_node->lb << endl;
 
-		if (current_node->lb < min_lb)
+		cout << current_node->lb << " visited: " << current_node->was_visitied << endl;
+
+		if (current_node->lb <= min_lb && current_node->lb != -1 && wasVisited(current_node) == false)
 		{
 			best_adjustment = current_node;
+			min_lb = current_node->lb;
 		}
 
 		preOrderTraversal(current_node->child_ptr);
 		preOrderTraversal(current_node->sibling_ptr);
 	}
 
-	min_lb = INT_MAX;
 }
 
 
@@ -248,6 +277,11 @@ void createChildren(GTNode* parent, int num)
 	child->level = parent->level + 1;
 	auto ancillary_map = parent->visited;
 
+	if (child->parent_ptr->parent_ptr != nullptr)
+	{
+		child->parent_ptr->parent_ptr->was_visitied = false;
+	}
+
 	setPath(child, ancillary_map);
 	calcLB(child);
 	createSiblings(child, parent, ancillary_map, num);
@@ -269,18 +303,29 @@ void findPath()
 	initFindPath(root);
 	preOrderHelp(root);
 
-	preOrderTraversal(root->child_ptr);
+	preOrderTraversal(root);
+	min_lb = INT_MAX;
 	int numOfChil = m_size - 1 - best_adjustment->level;
 	createChildren(best_adjustment, numOfChil);
 
 	preOrderHelp(root);
 
-	//preOrderTraversal(best_adjustment->child_ptr);
-	numOfChil = m_size - 1 - best_adjustment->child_ptr->level;
-	createChildren(best_adjustment->child_ptr, numOfChil);
+	preOrderTraversal(root);
+	min_lb = INT_MAX;
+	numOfChil = m_size - 1 - best_adjustment->level;
+	createChildren(best_adjustment, numOfChil);
 	end_counter = 0;
 
 	preOrderHelp(root);
+
+	preOrderTraversal(root);
+	min_lb = INT_MAX;
+	numOfChil = m_size - 1 - best_adjustment->level;
+	createChildren(best_adjustment, numOfChil);
+	end_counter = 0;
+
+	preOrderHelp(root);
+	cout << "UB: " << UB << endl;
 }
 
 
