@@ -13,6 +13,7 @@ vector<bool> unvisited; // sprawdzic czy da sie zainicjowac
 vector<int> memo;
 map<int, bool> visited_map;
 int UP;
+
 int matrix[][5] = {
 	{  -1,10,8,9,7  },
 	{  10,-1,10,5,6 },
@@ -40,6 +41,7 @@ class GTNode
 public:
 
 	int lb = 0;
+	int actual_cost = 0;
 	int level = 0;
 	// first int - which city, second int - on which position
 	map<int, int> visited; // sprawdziæ czy da sie zainicjowac
@@ -75,14 +77,15 @@ void calcLB(GTNode* n)
 			return pair.second == (last_visited_node->second - 1);
 		});
 
-	n->lb = n->parent_ptr->lb;
-	n->lb += matrix[penultimate_visted_node->first][last_visited_node->first];
+	n->actual_cost = matrix[penultimate_visted_node->first][last_visited_node->first];
+	n->actual_cost += n->parent_ptr->actual_cost;
+	n->lb = n->actual_cost;
 
 	int counter = 0;
 	std::for_each(std::begin(n->visited), std::end(n->visited),
 		[&, counter](const pair<int, int> &pair) mutable
 	{
-		if (pair.second != penultimate_visted_node->second)
+		if (pair.second == last_visited_node->second || pair.second == -1 )
 			n->lb += memo[counter];
 
 		++counter;
@@ -124,6 +127,7 @@ GTNode* findTheLowestLB(GTNode* node, int min_lb)
 	return best_adjustment;
 }
 
+GTNode* best_adjustment = new GTNode();
 
 void preOrderHelp(GTNode* current_node)
 {
@@ -133,14 +137,14 @@ void preOrderHelp(GTNode* current_node)
 		cout << current_node->lb << endl;
 		preOrderHelp(current_node->child_ptr);
 		preOrderHelp(current_node->sibling_ptr);
+		cout << "new level" << endl;
 	}
 }
 	
 
-GTNode* preOrderTraversal(GTNode* current_node)
+void preOrderTraversal(GTNode* current_node)
 {
 	int min_lb = INT_MAX;
-	GTNode* best_adjustment = new GTNode();
 
 	if (current_node != nullptr)
 	{
@@ -157,7 +161,6 @@ GTNode* preOrderTraversal(GTNode* current_node)
 	}
 
 	min_lb = INT_MAX;
-	return best_adjustment;
 }
 
 
@@ -208,7 +211,12 @@ void findPath()
 
 	initFindPath(root);
 	preOrderHelp(root);
-	createChildren(preOrderTraversal(root->child_ptr), m_size - 1 - (preOrderTraversal(root->child_ptr)->level));
+
+	GTNode* temp = new GTNode();
+	preOrderTraversal(root->child_ptr);
+	int numOfChil = m_size - 1 - best_adjustment->level;
+	createChildren(best_adjustment, numOfChil);
+	preOrderHelp(root);
 }
 
 
