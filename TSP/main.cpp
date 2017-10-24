@@ -10,20 +10,30 @@ using namespace std;
 
 int end_counter = 0;
 
-const int m_size{ 5 };
+const int m_size{ 6 };
 vector<bool> unvisited; // sprawdzic czy da sie zainicjowac
 vector<int> memo;
 map<int, bool> visited_map;
+map<int, int> path;
 int UB = INT_MAX;
 int min_lb = INT_MAX;
 
 
-int matrix[][5] = {
+/*int matrix[][5] = {
 	{  -1,10,8,9,7  },
 	{  10,-1,10,5,6 },
 	{  8,10,-1,8,9  },
 	{  9,5,8,-1,6   },
 	{  7,6,9,6,-1   }
+};*/
+
+int matrix[][6] = {
+	{ -1,3,93,13,33,9 },
+	{ 4,-1,77,42,21,16 },
+	{ 45,17,-1,36,16,28 },
+	{ 39,90,80,-1,56,7 },
+	{ 28,46,88,33,-1, 25 },
+	{ 3,88,18,46,92,-1}
 };
 
 
@@ -49,6 +59,7 @@ public:
 	int level = 0;
 	bool was_visitied = false;
 	bool leaf = false;
+	bool was_selected = false;
 	// first int - which city, second int - on which position
 	map<int, int> visited; // sprawdziæ czy da sie zainicjowac
 	GTNode* parent_ptr  = nullptr;
@@ -116,7 +127,11 @@ void calcLB(GTNode* n)
 		n->leaf = true;
 
 		if (n->lb < UB)
+		{
 			UB = n->lb;
+			path = n->visited;
+		}
+			
 	}
 }
 
@@ -163,20 +178,6 @@ void setPath(GTNode* current_node, map<int, int> &m)
 		current_node->visited[last_unvisited_node->first] = current_node->level + 1;
 		end_counter++;
 	}
-}
-
-
-GTNode* findTheLowestLB(GTNode* node, int min_lb)
-{
-	// sprawdzic pisowanie adjustment
-	GTNode* best_adjustment = new GTNode();
-
-	if (node->lb < min_lb)
-	{
-		best_adjustment = node;
-	}
-
-	return best_adjustment;
 }
 
 GTNode* best_adjustment = new GTNode();
@@ -230,14 +231,14 @@ bool wasVisited(GTNode* node)
 
 void preOrderTraversal(GTNode* current_node)
 {
-	cout << "min_lb: " << min_lb << endl;
+	//cout << "min_lb: " << min_lb << endl;
 	if (current_node != nullptr)
 	{
 		// visit this node here
 
-		cout << current_node->lb << " visited: " << current_node->was_visitied << endl;
+		//cout << current_node->lb << " visited: " << current_node->was_visitied << endl;
 
-		if (current_node->lb <= min_lb && current_node->lb != -1 && wasVisited(current_node) == false)
+		if (current_node->was_selected == false && current_node->lb <= min_lb && current_node->lb != -1 && wasVisited(current_node) == false)
 		{
 			best_adjustment = current_node;
 			min_lb = current_node->lb;
@@ -293,39 +294,54 @@ inline void initFindPath(GTNode* root)
 	createChildren(root, (m_size - 1 - root->level));
 }
 
+void mainLoop(GTNode* root)
+{
+	int numOfChil;
+	int counter = 0;
+	while (counter != 15)
+	{
+		cout << endl;
+		preOrderTraversal(root);
+		min_lb = INT_MAX;
+		numOfChil = m_size - 1 - best_adjustment->level;
+		best_adjustment->was_selected = true;
+		createChildren(best_adjustment, numOfChil);
+		end_counter = 0;
+
+		//preOrderHelp(root);
+		++counter;
+	}
+}
+
+void printPath()
+{
+	cout << "Path: ";
+
+	map<int, int> temp;
+	auto it_temp = temp.begin();
+	int i = 0;
+
+	for (auto it = path.begin(); it != path.end(); ++it)
+		temp.insert(it_temp, pair<int, int>(it->second, it->first));
+
+	for (auto it = temp.begin(); it != temp.end(); ++it, ++i)
+		cout << temp[i] + 1 << "->";
+
+	cout << "1" << endl;
+	cout << "Cost: " << UB << endl;
+}
+
 
 void findPath()
 {
 	GTNode* root = new GTNode();
-
 	root->visited[0] = 0;
 
 	initFindPath(root);
 	preOrderHelp(root);
 
-	preOrderTraversal(root);
-	min_lb = INT_MAX;
-	int numOfChil = m_size - 1 - best_adjustment->level;
-	createChildren(best_adjustment, numOfChil);
-
-	preOrderHelp(root);
-
-	preOrderTraversal(root);
-	min_lb = INT_MAX;
-	numOfChil = m_size - 1 - best_adjustment->level;
-	createChildren(best_adjustment, numOfChil);
-	end_counter = 0;
-
-	preOrderHelp(root);
-
-	preOrderTraversal(root);
-	min_lb = INT_MAX;
-	numOfChil = m_size - 1 - best_adjustment->level;
-	createChildren(best_adjustment, numOfChil);
-	end_counter = 0;
-
-	preOrderHelp(root);
-	cout << "UB: " << UB << endl;
+	mainLoop(root);
+	printPath();
 }
 
 
@@ -355,7 +371,7 @@ int main()
 				//set the lowest value for each row
 				memo.push_back(temp_LB);
 				temp_LB = INT_MAX;
-				//cout << "Memo map[" << i << "] = " << memo_map[i] << endl;
+				cout << "Memo map[" << i << "] = " << memo[i] << endl;
 			}
 		}
 
