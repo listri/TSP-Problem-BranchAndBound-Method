@@ -8,6 +8,8 @@
 
 using namespace std;
 
+int end_counter = 0;
+
 const int m_size{ 5 };
 vector<bool> unvisited; // sprawdzic czy da sie zainicjowac
 vector<int> memo;
@@ -71,25 +73,47 @@ void calcLB(GTNode* n)
 			return pair_1.second < pair_2.second;
 		});
 
-	auto penultimate_visted_node = std::find_if(std::begin(n->visited), std::end(n->visited),
+	auto penultimate_visited_node = std::find_if(std::begin(n->visited), std::end(n->visited),
 		[&](const pair<int, int> &pair)
 		{
 			return pair.second == (last_visited_node->second - 1);
 		});
 
-	n->actual_cost = matrix[penultimate_visted_node->first][last_visited_node->first];
+	n->actual_cost = matrix[penultimate_visited_node->first][last_visited_node->first];
 	n->actual_cost += n->parent_ptr->actual_cost;
 	n->lb = n->actual_cost;
 
 	int counter = 0;
-	std::for_each(std::begin(n->visited), std::end(n->visited),
-		[&, counter](const pair<int, int> &pair) mutable
-	{
-		if (pair.second == last_visited_node->second || pair.second == -1 )
-			n->lb += memo[counter];
 
-		++counter;
-	});
+	if (m_size - n->level != 2)
+	{
+		std::for_each(std::begin(n->visited), std::end(n->visited),
+			[&, counter](const pair<int, int> &pair) mutable
+		{
+			if (pair.second == last_visited_node->second || pair.second == -1)
+				n->lb += memo[counter];
+
+			++counter;
+		});
+	}
+	
+
+	else if (m_size - n->level == 2)
+	{
+		auto last_visited_node_1 = std::find_if(std::begin(n->visited), std::end(n->visited),
+			[](const std::pair<int, int> &pair)
+		{
+			return pair.second == m_size - 3;
+		});
+
+		cout << "penu: " << penultimate_visited_node->first << "   " << penultimate_visited_node->second << endl;
+		cout << "last: " << last_visited_node->first << "   " << last_visited_node->second << endl;
+		cout << "last_1: " << last_visited_node_1->first << "   " << last_visited_node_1->second << endl;
+
+
+		n->lb += matrix[last_visited_node_1->first][penultimate_visited_node->first];
+		n->lb += matrix[last_visited_node->first][0];
+	}
 }
 
 
@@ -99,16 +123,49 @@ void setPath(GTNode* current_node, map<int, int> &m)
 	//current_node->visited = current_node->parent_ptr->visited;
 
 	auto first_unvisited_node = std::find_if(std::begin(m), std::end(m),
-		[](const pair<int, int> &pair)
+		[&](const pair<int, int> &pair)
 		{
 			// you should consider only last result of this cout 
 			cout << "ancillary_map: " <<pair.first << " " << pair.second << endl;
-			return pair.second == -1;
+			if (end_counter == 1)
+				return pair.second == -3;
+			else
+				return pair.second == -1;
 		});
 	
 	// add new city to path
-	first_unvisited_node->second = true;
+	if (m_size - current_node->level == 2)
+		first_unvisited_node->second = -2;
+	else
+		first_unvisited_node->second = true;
+
+
 	current_node->visited[first_unvisited_node->first] = current_node->level; // pos
+
+	if (m_size - current_node->level == 2)
+	{
+		auto last_unvisited_node = std::find_if(std::begin(m), std::end(m),
+			[&](const pair<int, int> &pair)
+			{
+				// you should consider only last result of this cout 
+				cout << "ancillary_map in lasts nodes: " << pair.first << " " << pair.second << endl;
+				if (end_counter != 0) {
+					//end_counter = 0;
+					return pair.second == -2;
+				}
+				else {
+					return pair.second == -1;
+				}
+			});
+
+		last_unvisited_node->second = -3;
+		current_node->visited[last_unvisited_node->first] = current_node->level + 1;
+		end_counter++;
+		cout << m.max_size() << endl;
+	}
+	 
+
+
 	for (auto it = current_node->visited.begin(); it != current_node->visited.end(); ++it)
 		cout << "current_node first: " << it->first << "  second: " << it->second << endl;
 }
@@ -212,10 +269,17 @@ void findPath()
 	initFindPath(root);
 	preOrderHelp(root);
 
-	GTNode* temp = new GTNode();
 	preOrderTraversal(root->child_ptr);
 	int numOfChil = m_size - 1 - best_adjustment->level;
 	createChildren(best_adjustment, numOfChil);
+
+	preOrderHelp(root);
+
+	//preOrderTraversal(best_adjustment->child_ptr);
+	numOfChil = m_size - 1 - best_adjustment->child_ptr->level;
+	createChildren(best_adjustment->child_ptr, numOfChil);
+	end_counter = 0;
+
 	preOrderHelp(root);
 }
 
