@@ -283,13 +283,12 @@ bool wasVisited(GTNode* node) {
 void preOrderTraversal(GTNode* current_node) {
 	if (current_node != nullptr) {
 
-		if (current_node->was_visited == false && current_node->lb != -1)
-			wasVisited(current_node);
+		//if (current_node->was_visited == false && current_node->lb != -1)
+		//	wasVisited(current_node);
 
 		if (current_node->was_selected == false &&
-			(current_node->lb <= min_lb &&
-			current_node->lb != -1 && 
-			current_node->was_visited == false))
+			current_node->lb <= min_lb &&
+			current_node->lb != -1)
 		{
 			best_adjustment = current_node;
 			min_lb = current_node->lb;
@@ -361,9 +360,9 @@ void mainLoop(GTNode* root)
 		best_adjustment->was_selected = true;
 		createChildren(best_adjustment, numOfChil);
 		end_counter = 0;
-		/*cout << endl;
-		cout << "before, counter = " << counter << endl;
-		preOrderHelp(root);*/
+		//cout << endl;
+		//cout << "counter = " << counter << endl;
+		//preOrderHelp(root);*/
 		//cout << "after" << endl;
 		cutOff(root);
 		preOrderHelp(root);
@@ -446,7 +445,7 @@ int main() {
 	calcInitLB();
 	findPath();
 	preOrderDelete(root);
-	preOrderHelp(root);
+	//preOrderHelp(root);
 	system("pause");
 	return 0;
 }
