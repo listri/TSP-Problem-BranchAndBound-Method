@@ -10,14 +10,14 @@ using namespace std;
 int end_counter = 0;
 int UB = INT_MAX;
 int min_lb = INT_MAX;
-const int m_size{ 13 };
+const int m_size{ 5 };
 bool ub_update = false;
 vector<bool> unvisited;
 vector<int> memo;
 map<int, bool> visited_map;
 map<int, int> path;
 
-int matrix[][m_size] =
+/*int matrix[][m_size] =
 { {-1, 2451, 713, 1018, 1631, 1374, 2408, 213, 2571, 875, 1420, 2145, 1972}, // New York
 {2451, -1, 1745, 1524, 831, 1240, 959, 2596, 403, 1589, 1374, 357, 579}, // Los Angeles
 {713, 1745, -1, 355, 920, 803, 1737, 851, 1858, 262, 940, 1453, 1260}, // Chicago
@@ -30,16 +30,26 @@ int matrix[][m_size] =
 {875, 1589, 262, 466, 796, 547, 1724, 1038, 1744, -1, 679, 1272, 1162}, // St.Louis
 {1420, 1374, 940, 1056, 879, 225, 1891, 1605, 1645, 679, -1, 1017, 1200}, // Houston
 {2145, 357, 1453, 1280, 586, 887, 1114, 2300, 653, 1272, 1017, -1, 504}, // Phoenix
-{1972, 579, 1260, 987, 371, 999, 701, 2099, 600, 1162, 1200, 504, -1 } }; // Salt Lake City
+{1972, 579, 1260, 987, 371, 999, 701, 2099, 600, 1162, 1200, 504, -1 } }; // Salt Lake City*/
 
-/*int matrix[][5] = {
+int matrix[][5] = {
 	{  -1,10,8,9,7  },
 	{  10,-1,10,5,6 },
 	{  8,10,-1,8,9  },
 	{  9,5,8,-1,6   },
 	{  7,6,9,6,-1   }
-};*/
+};
 
+
+/*int matrix[][m_size] = {
+	{-1,34,36,37,31,33,35},
+	{34,-1,29,23,22,25,24},
+	{36,29,-1,17,12,18,17},
+	{37,23,17,-1,32,30,29},
+	{31,22,12,32,-1,26,24},
+	{33,25,18,30,26,-1,19},
+	{35,24,17,29,24,19,-1}
+};*/
 
 /*int matrix[][m_size] = {
    { -1,3,93,13,33,9 },
@@ -87,63 +97,38 @@ public:
 	}
 }; GTNode* root = new GTNode(); GTNode* best_adjustment = new GTNode();
 
+void deleteChildrens(GTNode* current_node, GTNode* start_node)
+{
+	if (current_node != nullptr) {
+		deleteChildrens(current_node->child_ptr, start_node);
+		if (current_node != start_node)
+			deleteChildrens(current_node->sibling_ptr, start_node);
 
+		delete current_node;
+	}
+}
 void cutOff(GTNode* current_node) {
 	if (current_node != nullptr) {
 		if (current_node->lb >= UB)
 		{
 			// usuwanie wêz³a z œrodka
 			if (current_node->sibling_ptr != nullptr && current_node->prev_node != nullptr) {
-				/*cout << endl <<
-					"Przed usunieciem z srodka\n current_node:  " << current_node->lb << "  " << current_node << endl
-					<< " current_node->parent: " << current_node->parent_ptr->lb << "  " << current_node->parent_ptr << endl
-					<< " current_node->child: " << current_node->child_ptr << endl
-					<< " current_node->prev: " << current_node->prev_node->lb << "  " << current_node->prev_node << endl
-					<< " current_node->sibling: " << current_node->sibling_ptr->lb << "  " << current_node->sibling_ptr << endl
-					<< endl;*/
-
 				GTNode* help = current_node;
 				current_node->prev_node->sibling_ptr = current_node->sibling_ptr;
 				current_node->sibling_ptr->prev_node = current_node->prev_node;
 				current_node = current_node->prev_node;
 
-				/*cout << "Usuwanie z srodka " << help << " level: " 
-					<< help->level << endl
-					<< " current_node:  " << current_node->lb << "  " << current_node << endl
-					<< " current_node->parent: " << current_node->parent_ptr->lb << "  " << current_node->parent_ptr << endl
-					<< " current_node->child: " << current_node->child_ptr << endl
-					<< " current_node->prev: " << current_node->prev_node->lb << "  " << current_node->prev_node << endl
-					<< " current_node->sibling: " << current_node->sibling_ptr->lb << "  "<< current_node->sibling_ptr << endl
-					<< endl;*/
-
-				delete help;
+				deleteChildrens(help, help);
 
 			}
 			// usuwanie wêz³a z pocz¹tku (gdy jest dzieckiem)
 			else if (current_node->parent_ptr->child_ptr == current_node && current_node->sibling_ptr != nullptr) {
-				/*cout << endl <<
-					"Przed usunieciem z poczatku\n current_node:  " << current_node << endl
-					<< " current_node->parent: " << current_node->parent_ptr << endl
-					<< " current_node->child: " << current_node->child_ptr << endl
-					<< " current_node->prev: " << current_node->prev_node << endl
-					<< " current_node->sibling: " << current_node->sibling_ptr
-					<< endl;*/
-
 				GTNode* help = current_node;
 				current_node->parent_ptr->child_ptr = current_node->sibling_ptr;
 				current_node->parent_ptr->child_ptr->prev_node = nullptr;
 				current_node = current_node->parent_ptr->child_ptr;
 
-				/*cout << "Usuwanie z poczatku " << help->lb << " level: "
-					<< help->level << endl
-					<< " current_node:  " << current_node << endl
-					<< " current_node->parent: " << current_node->parent_ptr << endl
-					<< " current_node->child: " << current_node->child_ptr << endl
-					<< " current_node->prev: " << current_node->prev_node << endl
-					<< " current_node->sibling: " << current_node->sibling_ptr << endl
-					<< endl;*/
-
-				delete help;
+				deleteChildrens(help, help);
 			}
 			// usuwanie wêz³a z koñca
 			else if (current_node->sibling_ptr == nullptr && current_node->prev_node != nullptr)
@@ -151,35 +136,17 @@ void cutOff(GTNode* current_node) {
 				GTNode* help = current_node;
 				current_node = current_node->prev_node;
 				current_node->sibling_ptr = nullptr;
-				//cout << "usuwam z konca " << help->lb << " level " << " : " << current_node->prev_node << " : " << current_node->sibling_ptr << endl;
 
-				delete help;
-
+				deleteChildrens(help, help);
 			}
 			// usuwanie gdy to jedyny wêze³ w rzêdzie
 			else {
-				/*cout << endl <<
-					"Przed usunieciem jednego wezla \n current_node:  " << current_node << endl
-					<< " current_node->parent: " << current_node->parent_ptr << endl
-					<< " current_node->child: " << current_node->child_ptr << endl
-					<< " current_node->prev: " << current_node->prev_node << endl
-					<< " current_node->sibling: " << current_node->sibling_ptr
-					<< endl;*/
 
 				GTNode* help = current_node;
 				current_node = current_node->parent_ptr;
 				current_node->child_ptr = nullptr;
 
-				/*cout << "Usuniecia wezla: " << help->lb << " level: "
-					<< help->level << endl
-					<< " current_node:  " << current_node << endl
-					<< " current_node->parent: " << current_node->parent_ptr << endl
-					<< " current_node->child: " << current_node->child_ptr << endl
-					<< " current_node->prev: " << current_node->prev_node << endl
-					<< " current_node->sibling: " << current_node->sibling_ptr << endl
-					<< endl;*/
-
-				delete help;
+				deleteChildrens(help, help);
 			}
 		}
 		
@@ -192,13 +159,7 @@ void cutOff(GTNode* current_node) {
 void preOrderHelp(GTNode* current_node)
 {
 	if (current_node != nullptr) {
-		//cout << current_node->lb << " visited: " << current_node->was_visited << endl;
-		/*cout << " current_node:  " << current_node->lb << "   " << current_node << endl
-			<< " current_node->parent: " << current_node->parent_ptr << endl
-			<< " current_node->child: " << current_node->child_ptr << endl
-			<< " current_node->prev: " << current_node->prev_node << endl
-			<< " current_node->sibling: " << current_node->sibling_ptr << endl
-			<< endl;*/
+		cout << current_node->lb << "   " << current_node->level << endl;
 		preOrderHelp(current_node->child_ptr);
 		preOrderHelp(current_node->sibling_ptr);
 	}
@@ -313,14 +274,60 @@ bool wasVisited(GTNode* node) {
 
 void preOrderTraversal(GTNode* current_node) {
 	if (current_node != nullptr) {
-		if (current_node->was_selected == false && 
-			current_node->lb <= min_lb && 
-			current_node->lb != -1 && 
-			current_node->was_visited == false && 
-			wasVisited(current_node) == false) 
+		if (current_node->was_selected == false &&
+			current_node->lb <= min_lb &&
+			current_node->lb != -1 &&
+			current_node->was_visited == false &&
+			wasVisited(current_node) == false)
 		{
 			best_adjustment = current_node;
 			min_lb = current_node->lb;
+		}
+
+		else if (current_node->lb >= UB)
+		{
+			// usuwanie wêz³a z œrodka
+			if (current_node->sibling_ptr != nullptr && current_node->prev_node != nullptr) {
+
+				GTNode* help = current_node;
+				current_node->prev_node->sibling_ptr = current_node->sibling_ptr;
+				current_node->sibling_ptr->prev_node = current_node->prev_node;
+				current_node = current_node->prev_node;
+
+
+				deleteChildrens(help, help);
+
+			}
+			// usuwanie wêz³a z pocz¹tku (gdy jest dzieckiem)
+			else if (current_node->parent_ptr->child_ptr == current_node && current_node->sibling_ptr != nullptr) {
+				GTNode* help = current_node;
+				current_node->parent_ptr->child_ptr = current_node->sibling_ptr;
+				current_node->parent_ptr->child_ptr->prev_node = nullptr;
+				current_node = current_node->parent_ptr->child_ptr;
+
+				deleteChildrens(help, help);
+			}
+			// usuwanie wêz³a z koñca
+			else if (current_node->sibling_ptr == nullptr && current_node->prev_node != nullptr)
+			{
+				GTNode* help = current_node;
+				current_node = current_node->prev_node;
+				current_node->sibling_ptr = nullptr;
+				//cout << "usuwam z konca " << help->lb << " level " << " : " << current_node->prev_node << " : " << current_node->sibling_ptr << endl;
+
+				deleteChildrens(help, help);
+
+			}
+			// usuwanie gdy to jedyny wêze³ w rzêdzie
+			else {
+				
+
+				GTNode* help = current_node;
+				current_node = current_node->parent_ptr;
+				current_node->child_ptr = nullptr;
+
+				deleteChildrens(help, help);
+			}
 		}
 
 		preOrderTraversal(current_node->child_ptr);
@@ -348,7 +355,7 @@ void createSiblings(GTNode* child, GTNode* parent, map<int, int> &m, int num) {
 		preOrderHelp(root);
 		// najlepiej wykonaæ jak bêdzie zrobiony ca³y wêze³
 		cutOff(root);
-		cout << "after" << endl;
+		// << "after" << endl;
 		//preOrderHelp(root);
 		ub_update = false;
 	}
@@ -382,14 +389,15 @@ void mainLoop(GTNode* root)
 	int numOfChil;
 	int counter = 0;
 
-	while (counter != 20000) {
+	while (counter != 100000) {
+		//cout << endl;
 		preOrderTraversal(root);
-		min_lb = INT_MAX;
+		//min_lb = INT_MAX;
 		numOfChil = m_size - 1 - best_adjustment->level;
 		best_adjustment->was_selected = true;
 		createChildren(best_adjustment, numOfChil);
 		end_counter = 0;
-
+		//preOrderHelp(root);
 		++counter;
 	}
 }
@@ -423,6 +431,15 @@ void findPath() {
 	printPath();
 
 	delete root;
+}
+
+void preOrderDelete(GTNode* current_node)
+{
+	if (current_node != nullptr) {
+		preOrderHelp(current_node->child_ptr);
+		preOrderHelp(current_node->sibling_ptr);
+		delete current_node;
+	}
 }
 
 
