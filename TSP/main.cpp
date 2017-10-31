@@ -10,17 +10,17 @@ using namespace std;
 int end_counter = 0;
 int UB = INT_MAX;
 int min_lb = INT_MAX;
-const int m_size{ 5 };
+const int m_size{ 13 };
 bool ub_update = false;
 vector<bool> unvisited;
 vector<int> memo;
 map<int, bool> visited_map;
 map<int, int> path;
-int visited_counter = 0;
-int nodes_counter = 0;
+double visited_counter = 0;
+double nodes_counter = 0;
 
 
-/*int matrix[][m_size] =
+int matrix[][m_size] =
 { {-1, 2451, 713, 1018, 1631, 1374, 2408, 213, 2571, 875, 1420, 2145, 1972}, // New York
 {2451, -1, 1745, 1524, 831, 1240, 959, 2596, 403, 1589, 1374, 357, 579}, // Los Angeles
 {713, 1745, -1, 355, 920, 803, 1737, 851, 1858, 262, 940, 1453, 1260}, // Chicago
@@ -33,15 +33,15 @@ int nodes_counter = 0;
 {875, 1589, 262, 466, 796, 547, 1724, 1038, 1744, -1, 679, 1272, 1162}, // St.Louis
 {1420, 1374, 940, 1056, 879, 225, 1891, 1605, 1645, 679, -1, 1017, 1200}, // Houston
 {2145, 357, 1453, 1280, 586, 887, 1114, 2300, 653, 1272, 1017, -1, 504}, // Phoenix
-{1972, 579, 1260, 987, 371, 999, 701, 2099, 600, 1162, 1200, 504, -1 } }; // Salt Lake City*/
+{1972, 579, 1260, 987, 371, 999, 701, 2099, 600, 1162, 1200, 504, -1 } }; // Salt Lake City
 
-int matrix[][5] = {
+/*int matrix[][5] = {
 	{  -1,10,8,9,7  },
 	{  10,-1,10,5,6 },
 	{  8,10,-1,8,9  },
 	{  9,5,8,-1,6   },
 	{  7,6,9,6,-1   }
-};
+};*/
 
 
 /*int matrix[][m_size] = {
@@ -53,6 +53,7 @@ int matrix[][5] = {
 	{33,25,18,30,26,-1,19},
 	{35,24,17,29,24,19,-1}
 };*/
+
 
 /*int matrix[][m_size] = {
    { -1,3,93,13,33,9 },
@@ -80,7 +81,6 @@ public:
 	int lb = -1;
 	int actual_cost = 0;
 	int level = 0;
-	bool was_visited = false;
 	bool leaf = false;
 	bool was_selected = false;
 	// first int - which city, second int - on which position
@@ -95,9 +95,7 @@ public:
 			visited[i] = -1;
 	}
 
-	~GTNode() {
-		// make up
-	}
+	~GTNode() {}
 }; GTNode* root = new GTNode(); GTNode* best_adjustment = new GTNode();
 
 void deleteChildrens(GTNode* current_node, GTNode* start_node)
@@ -167,7 +165,7 @@ void preOrderHelp(GTNode* current_node)
 		if (current_node->was_selected == true)
 			++visited_counter;
 
-		cout << current_node->lb << "   " << current_node->level << "   " << current_node->was_visited << "   " << current_node->was_selected << endl;
+		//cout << current_node->lb << "   " << current_node->level << "   " << current_node->was_selected << endl;
 		preOrderHelp(current_node->child_ptr);
 		preOrderHelp(current_node->sibling_ptr);
 	}
@@ -215,7 +213,6 @@ void calcLB(GTNode* n) {
 			UB = n->lb;
 			cout << "LEAF UB: " << UB << endl;
 			path = n->visited;
-			ub_update = true;
 		}	
 	}
 } 
@@ -254,48 +251,23 @@ void setPath(GTNode* current_node, map<int, int> &m) {
 }
 
 
-bool wasVisited(GTNode* node) {
-	GTNode* temp = new GTNode();
-
-	if (node->child_ptr == nullptr)
-		return false;
-	else
-		temp = node->child_ptr;
-
-	if (temp->leaf == true) {
-		node->was_visited = true;
-
-		return true;
-	}
-
-	while (temp->sibling_ptr != nullptr) {
-		temp = temp->sibling_ptr;
-
-		if (temp->child_ptr == nullptr)
-			return false;
-	}
-	
-	node->was_visited = true;
-	return true;
-}
-
-
 void preOrderTraversal(GTNode* current_node) {
 	if (current_node != nullptr) {
-
-		//if (current_node->was_visited == false && current_node->lb != -1)
-		//	wasVisited(current_node);
-
+		GTNode* help = current_node;
 		if (current_node->was_selected == false &&
-			current_node->lb <= min_lb &&
-			current_node->lb != -1)
+			current_node->lb < min_lb)
 		{
 			best_adjustment = current_node;
 			min_lb = current_node->lb;
+
+			if (current_node->lb >= UB) {
+				help = current_node->parent_ptr;
+				cutOff(help);
+			}
 		}
 
-		preOrderTraversal(current_node->child_ptr);
-		preOrderTraversal(current_node->sibling_ptr);
+		preOrderTraversal(help->child_ptr);
+		preOrderTraversal(help->sibling_ptr);
 	}
 }
 
@@ -310,10 +282,24 @@ void createSiblings(GTNode* child, GTNode* parent, map<int, int> &m, int num) {
 
 		setPath(child->sibling_ptr, m);
 		calcLB(child->sibling_ptr);
+
+		if (child->sibling_ptr->lb >= UB)
+			ub_update = true;
+
 		--num;
 
 		createSiblings(child->sibling_ptr, parent, m, num);
 	}
+	
+	if (ub_update == true) {
+		//cout << "\nbefore_cut" << endl;
+		//preOrderHelp(root);
+		//nodes_counter = 0;
+		//visited_counter = 0;
+		cutOff(parent);
+		ub_update = false;
+	}
+
 
 	/*cout << endl;
 	cout << "before" << endl;
@@ -332,11 +318,12 @@ void createChildren(GTNode* parent, int num) {
 	child->level = parent->level + 1;
 	auto ancillary_map = parent->visited;
 
-	if (child->parent_ptr->parent_ptr != nullptr)
-		child->parent_ptr->parent_ptr->was_visited = false;
-
 	setPath(child, ancillary_map);
 	calcLB(child);
+
+	if (child->lb >= UB)
+		ub_update = true;
+
 	createSiblings(child, parent, ancillary_map, num);
 }
 
@@ -355,6 +342,8 @@ void mainLoop(GTNode* root)
 
 	while (true) {
 		preOrderTraversal(root);
+		//cout << "\nbefore" << endl;
+		//preOrderHelp(root);
 		min_lb = INT_MAX;
 		numOfChil = m_size - 1 - best_adjustment->level;
 		best_adjustment->was_selected = true;
@@ -362,12 +351,15 @@ void mainLoop(GTNode* root)
 		end_counter = 0;
 		//cout << endl;
 		//cout << "counter = " << counter << endl;
-		//preOrderHelp(root);*/
 		//cout << "after" << endl;
-		cutOff(root);
+		//cutOff(root);
+		//cout << "\nafter" << endl;
 		preOrderHelp(root);
 
-		if (nodes_counter - 1 == visited_counter)
+		if (counter % 1000 == 0)
+			cout << "ratio: " << static_cast<double>(nodes_counter / visited_counter) << endl;
+
+		if (nodes_counter == visited_counter)
 			break;
 
 		nodes_counter = 0;
@@ -375,6 +367,7 @@ void mainLoop(GTNode* root)
 
 		++counter;
 	}
+	cout << "\nCOUNTER = " << counter << endl;
 }
 
 
@@ -398,9 +391,10 @@ void printPath() {
 
 void findPath() {
 	root->visited[0] = 0;
+	root->was_selected = true;
 
 	initFindPath(root);
-	//preOrderHelp(root);
+	preOrderHelp(root);
 
 	mainLoop(root);
 	printPath();
