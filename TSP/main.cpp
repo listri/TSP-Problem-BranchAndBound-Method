@@ -71,18 +71,6 @@ int matrix[][m_size] =
    { 3,88,18,46,92,-1} };*/
 
 
-
-void printMatrix(int m[][5]) {
-	for (int i = 0; i < 5; ++i)
-		for (int j = 0; j < 5; ++j) {
-			cout << m[i][j];
-
-			if (j == 4)
-				cout << endl;
-		}
-}
-
-
 class GTNode {
 public:
 	int lb = -1;
@@ -91,8 +79,7 @@ public:
 	int level = 0;
 	bool leaf = false;
 	bool was_selected = false;
-	// first int - which city, second int - on which position
-	map<int, int> visited;
+	map<int, int> visited; 	// first int - which city, second int - on which position
 	GTNode* parent_ptr  = nullptr;
 	GTNode* child_ptr   = nullptr;
 	GTNode* sibling_ptr = nullptr;
@@ -106,6 +93,7 @@ public:
 	~GTNode() {}
 }; GTNode* root = new GTNode(); GTNode* best_adjustment = new GTNode();
 
+
 void deleteChildrens(GTNode* current_node, GTNode* start_node)
 {
 	if (current_node != nullptr) {
@@ -116,16 +104,17 @@ void deleteChildrens(GTNode* current_node, GTNode* start_node)
 		delete current_node;
 	}
 }
+
+
 void cutOff(GTNode* current_node) {
 	if (current_node != nullptr) {
-		if (current_node->lb >= UB)
-		{
+		if (current_node->lb >= UB) {
 			// usuwanie wêz³a z œrodka
 			if (current_node->sibling_ptr != nullptr && current_node->prev_node != nullptr) {
 				GTNode* help = current_node;
 				current_node->prev_node->sibling_ptr = current_node->sibling_ptr;
 				current_node->sibling_ptr->prev_node = current_node->prev_node;
-				current_node = current_node->parent_ptr; // was cr->prev_node
+				current_node = current_node->parent_ptr;
 
 				deleteChildrens(help, help);
 
@@ -144,7 +133,7 @@ void cutOff(GTNode* current_node) {
 			{
 				GTNode* help = current_node;
 				current_node->prev_node->sibling_ptr = nullptr;
-				current_node = current_node->parent_ptr; // was cr->prev_node
+				current_node = current_node->parent_ptr;
 
 				deleteChildrens(help, help);
 			}
@@ -172,11 +161,9 @@ void cutOffSelected(GTNode* current_node) {
 				GTNode* help = current_node;
 				current_node->prev_node->sibling_ptr = current_node->sibling_ptr;
 				current_node->sibling_ptr->prev_node = current_node->prev_node;
-				current_node = current_node->parent_ptr; // was cr->prev_node
+				current_node = current_node->parent_ptr; 
 
 				delete help;
-				//deleteChildrens(help, help);
-
 			}
 			// usuwanie wêz³a z pocz¹tku (gdy jest dzieckiem)
 			else if (current_node->parent_ptr->child_ptr == current_node && current_node->sibling_ptr != nullptr) {
@@ -186,30 +173,24 @@ void cutOffSelected(GTNode* current_node) {
 				current_node = current_node->parent_ptr;
 
 				delete help;
-				//deleteChildrens(help, help);
 			}
 			// usuwanie wêz³a z koñca
-			else if (current_node->sibling_ptr == nullptr && current_node->prev_node != nullptr)
-			{
+			else if (current_node->sibling_ptr == nullptr && current_node->prev_node != nullptr) {
 				GTNode* help = current_node;
 				current_node->prev_node->sibling_ptr = nullptr;
-				current_node = current_node->parent_ptr; // was cr->prev_node
+				current_node = current_node->parent_ptr;
 
 				delete help;
-				//deleteChildrens(help, help);
 			}
 			// usuwanie gdy to jedyny wêze³ w rzêdzie
 			else {
-
 				GTNode* help = current_node;
 				current_node = current_node->parent_ptr;
 				current_node->child_ptr = nullptr;
 
 				delete help;
-				//deleteChildrens(help, help);
 			}
 
-			//cutOffSelected(current_node->child_ptr);
 			cutOffSelected(current_node->sibling_ptr);
 		}
 	}	
@@ -219,12 +200,7 @@ void cutOffSelected(GTNode* current_node) {
 void preOrderHelp(GTNode* current_node)
 {
 	if (current_node != nullptr) {
-		//++nodes_counter;
-
-		//if (current_node->was_selected == true)
-			//++visited_counter;
-
-		//cout << current_node->lb << "   " << current_node->level << "   " << current_node->was_selected << endl;
+		cout << current_node->lb << "   " << current_node->level << "   " << current_node->was_selected << endl;
 		preOrderHelp(current_node->child_ptr);
 		preOrderHelp(current_node->sibling_ptr);
 	}
@@ -270,7 +246,7 @@ void calcLB(GTNode* n) {
 
 		if (n->lb < UB) {
 			UB = n->lb;
-			cout << "LEAF UB: " << UB << endl;
+			//cout << "LEAF UB: " << UB << endl;
 			path = n->visited;
 		}	
 	}
@@ -286,8 +262,7 @@ void setPath(GTNode* current_node, map<int, int> &m) {
 				return pair.second == -1;
 		});
 	
-	// add new city to path
-
+	// add new city to the path
 	current_node->visited[first_unvisited_node->first] = current_node->level;
 	if (m_size - current_node->level == 2)
 		first_unvisited_node->second = -2;
@@ -322,23 +297,13 @@ void preOrderTraversal(GTNode* current_node) {
 
 			if (current_node->lb >= UB) {
 				help = current_node->parent_ptr;
-				//cout << "\nbefore_cut" << endl;
-				//preOrderHelp(root);
-				cutOff(current_node);
-				//cout << "\nafter_cut" << endl;
-				//preOrderHelp(root);			
+				cutOff(current_node);	
 			}
 		}
-
 		else if (current_node->was_selected && (current_node->child_ptr == nullptr)) {
 			help = current_node->parent_ptr;
-			//cout << "\nbefore_cut_selected" << endl;
-			//preOrderHelp(root);
 			cutOffSelected(current_node);
-			//cout << "\nafter_cut_selected" << endl;
-			//preOrderHelp(root);
 		}
-
 		else if (current_node->was_selected) {
 			selected_counter++;
 		}
@@ -369,13 +334,8 @@ void createSiblings(GTNode* child, GTNode* parent, map<int, int> &m, int num) {
 	}
 	
 	if (ub_update == true) {
-		//cout << "\nbefore_cut" << endl;
-		//preOrderHelp(root);
-		
 		cutOff(parent);
 		ub_update = false;
-		//cout << "\nafter_cut" << endl;
-		//preOrderHelp(root);
 	}
 }
 
@@ -400,8 +360,6 @@ void createChildren(GTNode* parent, int num) {
 
 inline void initFindPath(GTNode* root) {
 	createChildren(root, (m_size - 1 - root->level));
-	//cout << endl;
-	//preOrderHelp(root);
 }
 
 
@@ -412,38 +370,26 @@ void mainLoop(GTNode* root)
 
 	while (end_flag == false) {
 		preOrderTraversal(root);
+
 		if (nodes_counter - 1 == selected_counter)
 			end_flag = true;
+
 		if (counter % 1000 == 0)
 			cout << "ratio: " << static_cast<double>(nodes_counter / selected_counter) << endl;
+
 		selected_counter = 0;
 		nodes_counter = 0;
-		//cout << "\nbefore" << endl;
-		//preOrderHelp(root);
+
 		min_lb = INT_MAX;
 		numOfChil = m_size - 1 - best_adjustment->level;
 		best_adjustment->was_selected = true;
+
 		if (best_adjustment->lb >-1)
 			createChildren(best_adjustment, numOfChil);
 		end_counter = 0;
-		//cout << endl;
-		//cout << "counter = " << counter << endl;
-		//cout << "after" << endl;
-		//cutOff(root);
-		//cout << "\nafter" << endl;
-		//preOrderHelp(root);
-
 		
-
-		/*if (nodes_counter == visited_counter)
-			break;*/
-
-		//nodes_counter = 0;
-		//visited_counter = 0;
-
 		++counter;
 	}
-	cout << "\nCOUNTER = " << counter << endl;
 }
 
 
@@ -467,11 +413,8 @@ void printPath() {
 
 void findPath() {
 	root->visited[0] = 0;
-	//root->was_selected = true;
 
 	initFindPath(root);
-	preOrderHelp(root);
-
 	mainLoop(root);
 	printPath();
 }
@@ -502,7 +445,6 @@ void calcInitLB() {
 				LB += temp_LB;
 				memo.push_back(temp_LB);
 				temp_LB = INT_MAX;
-				//cout << "Memo map[" << i << "] = " << memo[i] << endl;
 			}
 		}
 }
@@ -518,11 +460,12 @@ int main() {
 	findPath();
 	QueryPerformanceCounter(&t2);
 
-	preOrderDelete(root);
 	elapsedTime = ((t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart)/1000;
 	cout << endl << "time: " << elapsedTime << endl;
 
-	preOrderHelp(root);
+	delete root;
+	delete best_adjustment;
+
 	system("pause");
 	return 0;
 }
