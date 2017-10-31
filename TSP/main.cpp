@@ -18,7 +18,8 @@ map<int, bool> visited_map;
 map<int, int> path;
 double visited_counter = 0;
 double nodes_counter = 0;
-
+int selected_counter = 0;
+bool end_flag = false;
 
 int matrix[][m_size] =
 { {-1, 2451, 713, 1018, 1631, 1374, 2408, 213, 2571, 875, 1420, 2145, 1972}, // New York
@@ -160,10 +161,10 @@ void cutOff(GTNode* current_node) {
 void preOrderHelp(GTNode* current_node)
 {
 	if (current_node != nullptr) {
-		++nodes_counter;
+		//++nodes_counter;
 
 		if (current_node->was_selected == true)
-			++visited_counter;
+			//++visited_counter;
 
 		//cout << current_node->lb << "   " << current_node->level << "   " << current_node->was_selected << endl;
 		preOrderHelp(current_node->child_ptr);
@@ -254,7 +255,8 @@ void setPath(GTNode* current_node, map<int, int> &m) {
 void preOrderTraversal(GTNode* current_node) {
 	if (current_node != nullptr) {
 		GTNode* help = current_node;
-		if (current_node->was_selected == false &&
+		++nodes_counter;
+		if (current_node->lb != -1 && current_node->was_selected == false &&
 			current_node->lb < min_lb)
 		{
 			best_adjustment = current_node;
@@ -262,13 +264,24 @@ void preOrderTraversal(GTNode* current_node) {
 
 			if (current_node->lb >= UB) {
 				help = current_node->parent_ptr;
+				cout << "\nbefore_cut" << endl;
+				preOrderHelp(root);
+				//nodes_counter = 0;
+				//visited_counter = 0;
 				cutOff(help);
-			}
+				cout << "\nafter" << endl;
+				preOrderHelp(root);			}
+		}
+		else if (current_node->was_selected) {
+			selected_counter++;
 		}
 
 		preOrderTraversal(help->child_ptr);
 		preOrderTraversal(help->sibling_ptr);
 	}
+
+	if (nodes_counter - 1 == selected_counter)
+		end_flag = true;
 }
 
 
@@ -298,15 +311,9 @@ void createSiblings(GTNode* child, GTNode* parent, map<int, int> &m, int num) {
 		//visited_counter = 0;
 		cutOff(parent);
 		ub_update = false;
+		//cout << "\nafter" << endl;
+		//preOrderHelp(root);
 	}
-
-
-	/*cout << endl;
-	cout << "before" << endl;
-	preOrderHelp(root);
-	cutOff(root);
-	cout << "after" << endl;
-	preOrderHelp(root);*/
 }
 
 
@@ -331,7 +338,7 @@ void createChildren(GTNode* parent, int num) {
 inline void initFindPath(GTNode* root) {
 	createChildren(root, (m_size - 1 - root->level));
 	cout << endl;
-	//preOrderHelp(root);
+	preOrderHelp(root);
 }
 
 
@@ -340,8 +347,12 @@ void mainLoop(GTNode* root)
 	int numOfChil;
 	int counter = 0;
 
-	while (true) {
+	while (end_flag == false) {
 		preOrderTraversal(root);
+		if (counter % 1000 == 0)
+			cout << "ratio: " << static_cast<double>(nodes_counter / selected_counter) << endl;
+		selected_counter = 0;
+		nodes_counter = 0;
 		//cout << "\nbefore" << endl;
 		//preOrderHelp(root);
 		min_lb = INT_MAX;
@@ -354,16 +365,15 @@ void mainLoop(GTNode* root)
 		//cout << "after" << endl;
 		//cutOff(root);
 		//cout << "\nafter" << endl;
-		preOrderHelp(root);
+		//preOrderHelp(root);
 
-		if (counter % 1000 == 0)
-			cout << "ratio: " << static_cast<double>(nodes_counter / visited_counter) << endl;
+		
 
-		if (nodes_counter == visited_counter)
-			break;
+		/*if (nodes_counter == visited_counter)
+			break;*/
 
-		nodes_counter = 0;
-		visited_counter = 0;
+		//nodes_counter = 0;
+		//visited_counter = 0;
 
 		++counter;
 	}
@@ -391,7 +401,7 @@ void printPath() {
 
 void findPath() {
 	root->visited[0] = 0;
-	root->was_selected = true;
+	//root->was_selected = true;
 
 	initFindPath(root);
 	preOrderHelp(root);
