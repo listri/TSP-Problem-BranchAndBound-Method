@@ -4,8 +4,14 @@
 #include <vector>
 #include <algorithm>
 #include "Reader.h"
+#include <tchar.h>
+#include <windows.h>
 
 using namespace std;
+
+LARGE_INTEGER frequency;        // ticks per second
+LARGE_INTEGER t1, t2;           // ticks
+double elapsedTime;
 
 int end_counter = 0;
 int UB = INT_MAX;
@@ -42,8 +48,8 @@ int matrix[][m_size] =
 	{  8,10,-1,8,9  },
 	{  9,5,8,-1,6   },
 	{  7,6,9,6,-1   }
-};*/
-
+};
+*/
 
 /*int matrix[][m_size] = {
 	{-1,34,36,37,31,33,35},
@@ -81,6 +87,7 @@ class GTNode {
 public:
 	int lb = -1;
 	int actual_cost = 0;
+	int rest_cost = 0;
 	int level = 0;
 	bool leaf = false;
 	bool was_selected = false;
@@ -157,13 +164,64 @@ void cutOff(GTNode* current_node) {
 	}
 }
 
+void cutOffSelected(GTNode* current_node) {
+	if (current_node != nullptr) {
+		if (current_node->was_selected == true) {
+			// usuwanie wêz³a z œrodka
+			if (current_node->sibling_ptr != nullptr && current_node->prev_node != nullptr) {
+				GTNode* help = current_node;
+				current_node->prev_node->sibling_ptr = current_node->sibling_ptr;
+				current_node->sibling_ptr->prev_node = current_node->prev_node;
+				current_node = current_node->parent_ptr; // was cr->prev_node
+
+				delete help;
+				//deleteChildrens(help, help);
+
+			}
+			// usuwanie wêz³a z pocz¹tku (gdy jest dzieckiem)
+			else if (current_node->parent_ptr->child_ptr == current_node && current_node->sibling_ptr != nullptr) {
+				GTNode* help = current_node;
+				current_node->parent_ptr->child_ptr = current_node->sibling_ptr;
+				current_node->parent_ptr->child_ptr->prev_node = nullptr;
+				current_node = current_node->parent_ptr;
+
+				delete help;
+				//deleteChildrens(help, help);
+			}
+			// usuwanie wêz³a z koñca
+			else if (current_node->sibling_ptr == nullptr && current_node->prev_node != nullptr)
+			{
+				GTNode* help = current_node;
+				current_node->prev_node->sibling_ptr = nullptr;
+				current_node = current_node->parent_ptr; // was cr->prev_node
+
+				delete help;
+				//deleteChildrens(help, help);
+			}
+			// usuwanie gdy to jedyny wêze³ w rzêdzie
+			else {
+
+				GTNode* help = current_node;
+				current_node = current_node->parent_ptr;
+				current_node->child_ptr = nullptr;
+
+				delete help;
+				//deleteChildrens(help, help);
+			}
+
+			//cutOffSelected(current_node->child_ptr);
+			cutOffSelected(current_node->sibling_ptr);
+		}
+	}	
+}
+
 
 void preOrderHelp(GTNode* current_node)
 {
 	if (current_node != nullptr) {
 		//++nodes_counter;
 
-		if (current_node->was_selected == true)
+		//if (current_node->was_selected == true)
 			//++visited_counter;
 
 		//cout << current_node->lb << "   " << current_node->level << "   " << current_node->was_selected << endl;
@@ -264,14 +322,23 @@ void preOrderTraversal(GTNode* current_node) {
 
 			if (current_node->lb >= UB) {
 				help = current_node->parent_ptr;
-				cout << "\nbefore_cut" << endl;
-				preOrderHelp(root);
-				//nodes_counter = 0;
-				//visited_counter = 0;
-				cutOff(help);
-				cout << "\nafter" << endl;
-				preOrderHelp(root);			}
+				//cout << "\nbefore_cut" << endl;
+				//preOrderHelp(root);
+				cutOff(current_node);
+				//cout << "\nafter_cut" << endl;
+				//preOrderHelp(root);			
+			}
 		}
+
+		else if (current_node->was_selected && (current_node->child_ptr == nullptr)) {
+			help = current_node->parent_ptr;
+			//cout << "\nbefore_cut_selected" << endl;
+			//preOrderHelp(root);
+			cutOffSelected(current_node);
+			//cout << "\nafter_cut_selected" << endl;
+			//preOrderHelp(root);
+		}
+
 		else if (current_node->was_selected) {
 			selected_counter++;
 		}
@@ -279,9 +346,6 @@ void preOrderTraversal(GTNode* current_node) {
 		preOrderTraversal(help->child_ptr);
 		preOrderTraversal(help->sibling_ptr);
 	}
-
-	if (nodes_counter - 1 == selected_counter)
-		end_flag = true;
 }
 
 
@@ -307,11 +371,10 @@ void createSiblings(GTNode* child, GTNode* parent, map<int, int> &m, int num) {
 	if (ub_update == true) {
 		//cout << "\nbefore_cut" << endl;
 		//preOrderHelp(root);
-		//nodes_counter = 0;
-		//visited_counter = 0;
+		
 		cutOff(parent);
 		ub_update = false;
-		//cout << "\nafter" << endl;
+		//cout << "\nafter_cut" << endl;
 		//preOrderHelp(root);
 	}
 }
@@ -337,8 +400,8 @@ void createChildren(GTNode* parent, int num) {
 
 inline void initFindPath(GTNode* root) {
 	createChildren(root, (m_size - 1 - root->level));
-	cout << endl;
-	preOrderHelp(root);
+	//cout << endl;
+	//preOrderHelp(root);
 }
 
 
@@ -349,6 +412,8 @@ void mainLoop(GTNode* root)
 
 	while (end_flag == false) {
 		preOrderTraversal(root);
+		if (nodes_counter - 1 == selected_counter)
+			end_flag = true;
 		if (counter % 1000 == 0)
 			cout << "ratio: " << static_cast<double>(nodes_counter / selected_counter) << endl;
 		selected_counter = 0;
@@ -358,7 +423,8 @@ void mainLoop(GTNode* root)
 		min_lb = INT_MAX;
 		numOfChil = m_size - 1 - best_adjustment->level;
 		best_adjustment->was_selected = true;
-		createChildren(best_adjustment, numOfChil);
+		if (best_adjustment->lb >-1)
+			createChildren(best_adjustment, numOfChil);
 		end_counter = 0;
 		//cout << endl;
 		//cout << "counter = " << counter << endl;
@@ -445,11 +511,18 @@ void calcInitLB() {
 int main() {
 	/*Reader reader;
 	reader.WczytajMiasta("brazil58.tsp");*/
+	QueryPerformanceFrequency(&frequency);
 
+	QueryPerformanceCounter(&t1);
 	calcInitLB();
 	findPath();
+	QueryPerformanceCounter(&t2);
+
 	preOrderDelete(root);
-	//preOrderHelp(root);
+	elapsedTime = ((t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart)/1000;
+	cout << endl << "time: " << elapsedTime << endl;
+
+	preOrderHelp(root);
 	system("pause");
 	return 0;
 }
