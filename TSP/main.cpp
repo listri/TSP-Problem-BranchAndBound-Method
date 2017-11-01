@@ -13,10 +13,12 @@ LARGE_INTEGER frequency;        // ticks per second
 LARGE_INTEGER t1, t2;           // ticks
 double elapsedTime;
 
+Reader reader;
+
 int end_counter = 0;
 int UB = INT_MAX;
 int min_lb = INT_MAX;
-const int m_size{ 13 };
+const int m_size{ 42 };
 bool ub_update = false;
 vector<bool> unvisited;
 vector<int> memo;
@@ -27,7 +29,7 @@ double nodes_counter = 0;
 int selected_counter = 0;
 bool end_flag = false;
 
-int matrix[][m_size] =
+/* matrix[][m_size] =
 { {-1, 2451, 713, 1018, 1631, 1374, 2408, 213, 2571, 875, 1420, 2145, 1972}, // New York
 {2451, -1, 1745, 1524, 831, 1240, 959, 2596, 403, 1589, 1374, 357, 579}, // Los Angeles
 {713, 1745, -1, 355, 920, 803, 1737, 851, 1858, 262, 940, 1453, 1260}, // Chicago
@@ -40,16 +42,16 @@ int matrix[][m_size] =
 {875, 1589, 262, 466, 796, 547, 1724, 1038, 1744, -1, 679, 1272, 1162}, // St.Louis
 {1420, 1374, 940, 1056, 879, 225, 1891, 1605, 1645, 679, -1, 1017, 1200}, // Houston
 {2145, 357, 1453, 1280, 586, 887, 1114, 2300, 653, 1272, 1017, -1, 504}, // Phoenix
-{1972, 579, 1260, 987, 371, 999, 701, 2099, 600, 1162, 1200, 504, -1 } }; // Salt Lake City
+{1972, 579, 1260, 987, 371, 999, 701, 2099, 600, 1162, 1200, 504, -1 } }; // Salt Lake City*/
 
-/*int matrix[][5] = {
+int matrix[][5] = {
 	{  -1,10,8,9,7  },
 	{  10,-1,10,5,6 },
 	{  8,10,-1,8,9  },
 	{  9,5,8,-1,6   },
 	{  7,6,9,6,-1   }
 };
-*/
+
 
 /*int matrix[][m_size] = {
 	{-1,34,36,37,31,33,35},
@@ -218,7 +220,7 @@ void calcLB(GTNode* n) {
 			return pair.second == (last_visited_node->second - 1);
 		});
 
-	n->actual_cost = matrix[penultimate_visited_node->first][last_visited_node->first];
+	n->actual_cost = reader.dist[penultimate_visited_node->first][last_visited_node->first];
 	n->actual_cost += n->parent_ptr->actual_cost;
 	n->lb = n->actual_cost;
 
@@ -240,13 +242,13 @@ void calcLB(GTNode* n) {
 			return pair.second == m_size - 3;
 		});
 
-		n->lb += matrix[last_visited_node_1->first][penultimate_visited_node->first];
-		n->lb += matrix[last_visited_node->first][0];
+		n->lb += reader.dist[last_visited_node_1->first][penultimate_visited_node->first];
+		n->lb += reader.dist[last_visited_node->first][0];
 		n->leaf = true;
 
 		if (n->lb < UB) {
 			UB = n->lb;
-			//cout << "LEAF UB: " << UB << endl;
+			cout << "LEAF UB: " << UB << endl;
 			path = n->visited;
 		}	
 	}
@@ -413,7 +415,7 @@ void printPath() {
 
 void findPath() {
 	root->visited[0] = 0;
-
+	best_adjustment->level = -1;
 	initFindPath(root);
 	mainLoop(root);
 	printPath();
@@ -438,8 +440,8 @@ void calcInitLB() {
 
 	for (int i = 0; i < m_size; i++)
 		for (int j = 0; j < m_size; j++) {
-			if (temp_LB > matrix[i][j] && matrix[i][j] != -1)
-				temp_LB = matrix[i][j];
+			if (temp_LB > reader.dist[i][j] && reader.dist[i][j] != -1)
+				temp_LB = reader.dist[i][j];
 
 			if (j % (m_size - 1) == 0 && j != 0) {
 				LB += temp_LB;
@@ -451,8 +453,7 @@ void calcInitLB() {
 
 
 int main() {
-	/*Reader reader;
-	reader.WczytajMiasta("brazil58.tsp");*/
+	reader.WczytajMiasta("swiss42.tsp");
 	QueryPerformanceFrequency(&frequency);
 
 	QueryPerformanceCounter(&t1);
@@ -463,8 +464,8 @@ int main() {
 	elapsedTime = ((t2.QuadPart - t1.QuadPart) * 1000.0 / frequency.QuadPart)/1000;
 	cout << endl << "time: " << elapsedTime << endl;
 
-	delete root;
-	delete best_adjustment;
+	//delete root;
+	//delete best_adjustment;
 
 	system("pause");
 	return 0;

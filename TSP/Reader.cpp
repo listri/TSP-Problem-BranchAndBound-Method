@@ -76,7 +76,7 @@ bool Reader::WczytajMiasta(string path)
 	}
 
 	//sprawdzenie poprawnosci wczytania ( wyrzuca na ekran)
-	i1 = dist.begin();
+	/*i1 = dist.begin();
 	for (i1; i1 < dist.end(); ++i1) {
 		i2 = i1->begin();
 		for (i2; i2 < i1->end(); ++i2) {
@@ -84,7 +84,7 @@ bool Reader::WczytajMiasta(string path)
 		}
 		cout << endl;
 	}
-
+	*/
 	return true;
 }
 
